@@ -5,15 +5,15 @@
 template <typename StlContainerT>
 class FluentIteratorBase
 {
-    using ContainerBaseT = FluentIteratorBase<StlContainerT>;
+    using FluentIteratorBaseT = FluentIteratorBase<StlContainerT>;
     using StlContainerItemT = typename StlContainerT::value_type;
 
 protected:
     std::vector<typename StlContainerT::iterator> mMatchingIterators;
 
 public:
-    virtual ContainerBaseT &filter(std::function<bool(StlContainerItemT const &)> &&) = 0;
-    virtual ContainerBaseT &map(std::function<StlContainerItemT(StlContainerItemT const &)> &&) = 0;
+    virtual FluentIteratorBaseT &filter(std::function<bool(StlContainerItemT const &)> &&) = 0;
+    virtual FluentIteratorBaseT &map(std::function<StlContainerItemT(StlContainerItemT const &)> &&) = 0;
 
     virtual StlContainerT collect() const = 0;
     virtual std::string to_string() const = 0;
