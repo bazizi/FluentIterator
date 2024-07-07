@@ -9,11 +9,7 @@ class FluentIteratorBase
     using StlContainerItemT = typename StlContainerT::value_type;
 
 protected:
-    // Avoids copying objects by using iterators
     std::vector<typename StlContainerT::iterator> mMatchingIterators;
-
-    //  Only used when map is called at least once, and we can't re-use iterators to the original container because new objects have to be created
-    StlContainerT mMatchingObjects;
 
 public:
     virtual ContainerBaseT &filter(std::function<bool(StlContainerItemT const &)> &&) = 0;
@@ -39,45 +35,19 @@ public:
         }
     }
 
-    void refreshIterators()
-    {
-        FluentIteratorBaseT::mMatchingIterators.clear();
-        for (auto iter = FluentIteratorBaseT::mMatchingObjects.begin(); iter != FluentIteratorBaseT::mMatchingObjects.end(); ++iter)
-        {
-            FluentIteratorBaseT::mMatchingIterators.emplace_back(iter);
-        }
-    }
-
     FluentIterator &filter(std::function<bool(StlContainerItemT const &)> &&predicate) override
     {
-        if (FluentIteratorBaseT::mMatchingObjects.empty())
+        // No objects were previously mapped, so we have to filter the iterators
+        decltype(FluentIteratorBaseT::mMatchingIterators) matchingIterators;
+        for (auto iter = FluentIteratorBaseT::mMatchingIterators.begin(); iter != FluentIteratorBaseT::mMatchingIterators.end(); ++iter)
         {
-            // No objects were previously mapped, so we have to filter the iterators
-            decltype(FluentIteratorBaseT::mMatchingIterators) matchingIterators;
-            for (auto iter = FluentIteratorBaseT::mMatchingIterators.begin(); iter != FluentIteratorBaseT::mMatchingIterators.end(); ++iter)
+            if (predicate(**iter))
             {
-                if (predicate(**iter))
-                {
-                    matchingIterators.emplace_back(std::move(*iter));
-                }
-            }
-
-            FluentIteratorBaseT::mMatchingIterators = std::move(matchingIterators);
-            return *this;
-        }
-
-        // Some objects were previously mapped, so we have to filter those
-        StlContainerT matchingObjects;
-        for (auto iter = FluentIteratorBaseT::mMatchingObjects.begin(); iter != FluentIteratorBaseT::mMatchingObjects.end(); ++iter)
-        {
-            if (predicate(*iter))
-            {
-                matchingObjects.emplace_back(std::move(*iter));
+                matchingIterators.emplace_back(std::move(*iter));
             }
         }
 
-        FluentIteratorBaseT::mMatchingObjects = std::move(matchingObjects);
-        refreshIterators();
+        FluentIteratorBaseT::mMatchingIterators = std::move(matchingIterators);
         return *this;
     }
 
@@ -86,10 +56,9 @@ public:
         StlContainerT matchingObjects;
         for (auto iter = FluentIteratorBaseT::mMatchingIterators.begin(); iter != FluentIteratorBaseT::mMatchingIterators.end(); ++iter)
         {
-            matchingObjects.emplace_back(predicate(**iter));
+            **iter = std::move(predicate(**iter));
         }
-        FluentIteratorBaseT::mMatchingObjects = std::move(matchingObjects);
-        refreshIterators();
+
         return *this;
     }
 
