@@ -15,8 +15,9 @@ public:
     virtual FluentIteratorBaseT &filter(std::function<bool(StlContainerItemT const &)> &&) = 0;
     virtual FluentIteratorBaseT &map(std::function<StlContainerItemT(StlContainerItemT const &)> &&) = 0;
 
-    virtual StlContainerT collect() const = 0;
-    virtual std::string to_string() const = 0;
+    virtual StlContainerT collect(bool consumeIter = true) = 0;
+    virtual std::string to_string(bool consumeIter = true) = 0;
+    virtual FluentIteratorBaseT &print() = 0;
 };
 
 template <typename StlContainerT>
@@ -53,7 +54,6 @@ public:
 
     FluentIterator &map(std::function<StlContainerItemT(StlContainerItemT const &)> &&predicate) override
     {
-        StlContainerT matchingObjects;
         for (auto iter = FluentIteratorBaseT::mMatchingIterators.begin(); iter != FluentIteratorBaseT::mMatchingIterators.end(); ++iter)
         {
             **iter = std::move(predicate(**iter));
@@ -62,23 +62,43 @@ public:
         return *this;
     }
 
-    StlContainerT collect() const override
+    StlContainerT collect(bool consumeIter = true) override
     {
         std::vector<StlContainerItemT> result;
         for (auto iter = FluentIteratorBaseT::mMatchingIterators.begin(); iter != FluentIteratorBaseT::mMatchingIterators.end(); ++iter)
         {
-            result.emplace_back(std::move(**iter));
+            if (consumeIter)
+            {
+                result.emplace_back(std::move(**iter));
+            }
+            else
+            {
+                result.emplace_back(**iter);
+            }
         }
         return StlContainerT(result.begin(), result.end());
     }
 
-    std::string to_string() const override
+    std::string to_string(bool consumeIter = true) override
     {
         std::stringstream ss;
-        for (auto const &item : collect())
+        bool firstIter = true;
+        for (auto const &item : collect(consumeIter))
         {
-            ss << item << std::endl;
+            if (!firstIter)
+            {
+                ss << ", ";
+            }
+            ss << item;
+            firstIter = false;
         }
+        ss << std::endl;
         return ss.str();
+    }
+
+    FluentIterator &print() override
+    {
+        std::cout << this->to_string(false /* consumeIter */);
+        return *this;
     }
 };
