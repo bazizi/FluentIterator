@@ -39,7 +39,6 @@ public:
 
     FluentIterator &filter(std::function<bool(StlContainerItemT const &)> &&predicate) override
     {
-        // No objects were previously mapped, so we have to filter the iterators
         decltype(FluentIteratorBaseT::mMatchingIterators) matchingIterators;
         for (auto iter = FluentIteratorBaseT::mMatchingIterators.begin(); iter != FluentIteratorBaseT::mMatchingIterators.end(); ++iter)
         {
